@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Table Booking Form - DHTML</title>
+
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #fdf3e3;
+    margin: 0;
+    padding: 20px 12px;
+  }
+  .form-box {
+    max-width: 460px;
+    margin: auto;
+    background: white;
+    padding: 20px 24px;
+    border-radius: 8px;
+    border: 1px solid #e0c9a6;
+  }
+  h2 { text-align: center; color: #7a3e00; margin-top: 0; }
+
+  label { display: block; margin-top: 14px; font-weight: bold; }
+  input[type="text"], input[type="password"], input[type="date"], select {
+    width: 100%;
+    padding: 8px;
+    margin-top: 4px;
+    box-sizing: border-box;
+    border: 2px solid #ccc;
+    border-radius: 4px;
+    font-size: 15px;
+  }
+  /* Highlight the field user is typing in */
+  input:focus, select:focus { border-color: #d98324; outline: none; }
+
+  /* Classes we add / remove using JavaScript */
+  .error-border { border-color: red !important; }
+  .ok-border { border-color: green !important; }
+
+  .error { color: red; font-size: 13px; min-height: 16px; }
+  .hint  { color: #777; font-size: 13px; }
+
+  .radio-row label { display: inline; font-weight: normal; margin-right: 12px; }
+
+  #total {
+    margin-top: 16px;
+    padding: 10px;
+    background: #fff3cd;
+    border-radius: 4px;
+  }
+  button {
+    margin-top: 16px;
+    padding: 10px 18px;
+    cursor: pointer;
+    border: none;
+    border-radius: 4px;
+    font-size: 15px;
+  }
+  #submitBtn { background: #d98324; color: white; }
+  #resetBtn  { background: #ddd; margin-left: 8px; }
+
+  #result {
+    margin-top: 16px;
+    padding: 12px;
+    background: #d4edda;
+    border-radius: 4px;
+  }
+  .hidden { display: none; }
+</style>
+</head>
+
+<body>
+<div class="form-box">
+  <h2>Table Booking</h2>
+
+  <form id="bookForm">
+
+    <!-- Name -->
+    <label for="name">Name</label>
+    <input type="text" id="name" placeholder="Enter your name">
+    <div class="error" id="nameErr"></div>
+
+    <!-- Phone -->
+    <label for="phone">Mobile Number</label>
+    <input type="text" id="phone" maxlength="10" placeholder="10 digit number">
+    <div class="error" id="phoneErr"></div>
+
+    <!-- Password with show/hide -->
+    <label for="pass">Create Password</label>
+    <input type="password" id="pass" placeholder="Minimum 6 characters">
+    <input type="checkbox" id="showPass"> <span class="hint">Show password</span>
+    <div class="error" id="passErr"></div>
+
+    <!-- Date -->
+    <label for="date">Date</label>
+    <input type="date" id="date">
+    <div class="error" id="dateErr"></div>
+
+    <!-- Dropdown -->
+    <label for="guests">Number of Guests</label>
+    <select id="guests">
+      <option value="0">-- Select --</option>
+      <option value="1">1</option>
+      <option value="2">2</option>
+      <option value="3">3</option>
+      <option value="4">4</option>
+      <option value="5">5</option>
+    </select>
+    <div class="error" id="guestErr"></div>
+
+    <!-- Radio buttons -->
+    <label>Meal Type</label>
+    <div class="radio-row">
+      <input type="radio" name="meal" value="150" id="m1" checked>
+      <label for="m1">Tiffin (Rs.150)</label>
+      <input type="radio" name="meal" value="250" id="m2">
+      <label for="m2">Meals (Rs.250)</label>
+    </div>
+
+    <!-- Live total -->
+    <div id="total">Estimated Total: Rs.0</div>
+
+    <!-- Textarea-like live counter on a text field -->
+    <label for="note">Special Request (optional)</label>
+    <input type="text" id="note" maxlength="30" placeholder="Eg: Window side table">
+    <div class="hint"><span id="count">0</span> / 30 characters</div>
+
+    <!-- Checkbox -->
+    <br>
+    <input type="checkbox" id="agree">
+    <label for="agree" style="display:inline; font-weight:normal;">I agree to the terms</label>
+    <div class="error" id="agreeErr"></div>
+
+    <button type="submit" id="submitBtn">Book Table</button>
+    <button type="button" id="resetBtn">Clear</button>
+  </form>
+
+  <!-- Shown after successful submit -->
+  <div id="result" class="hidden"></div>
+</div>
+
+<script>
+  // ---------- Get all elements first ----------
+  var form      = document.getElementById("bookForm");
+  var nameBox   = document.getElementById("name");
+  var phoneBox  = document.getElementById("phone");
+  var passBox   = document.getElementById("pass");
+  var dateBox   = document.getElementById("date");
+  var guestBox  = document.getElementById("guests");
+  var noteBox   = document.getElementById("note");
+  var agreeBox  = document.getElementById("agree");
+  var result    = document.getElementById("result");
+
+  // ---------- Helper functions (reuse again and again) ----------
+  function showError(inputBox, errId, message) {
+    document.getElementById(errId).innerHTML = message;
+    inputBox.classList.add("error-border");
+    inputBox.classList.remove("ok-border");
+  }
+  function showOk(inputBox, errId) {
+    document.getElementById(errId).innerHTML = "";
+    inputBox.classList.remove("error-border");
+    inputBox.classList.add("ok-border");
+  }
+
+  // ---------- Validation functions (return true / false) ----------
+  function checkName() {
+    var v = nameBox.value.trim();
+    if (v.length < 3) {
+      showError(nameBox, "nameErr", "Name must be at least 3 letters");
+      return false;
+    }
+    showOk(nameBox, "nameErr");
+    return true;
+  }
+
+  function checkPhone() {
+    var v = phoneBox.value;
+    // Only 10 digits, starting with 6-9
+    if (!/^[6-9][0-9]{9}$/.test(v)) {
+      showError(phoneBox, "phoneErr", "Enter valid 10 digit mobile number");
+      return false;
+    }
+    showOk(phoneBox, "phoneErr");
+    return true;
+  }
+
+  function checkPass() {
+    if (passBox.value.length < 6) {
+      showError(passBox, "passErr", "Password must be 6+ characters");
+      return false;
+    }
+    showOk(passBox, "passErr");
+    return true;
+  }
+
+  function checkDate() {
+    if (dateBox.value === "") {
+      showError(dateBox, "dateErr", "Please select a date");
+      return false;
+    }
+    showOk(dateBox, "dateErr");
+    return true;
+  }
+
+  function checkGuests() {
+    if (guestBox.value === "0") {
+      showError(guestBox, "guestErr", "Please select number of guests");
+      return false;
+    }
+    showOk(guestBox, "guestErr");
+    return true;
+  }
+
+  function checkAgree() {
+    if (!agreeBox.checked) {
+      document.getElementById("agreeErr").innerHTML = "You must accept the terms";
+      return false;
+    }
+    document.getElementById("agreeErr").innerHTML = "";
+    return true;
+  }
+
+  // ---------- Events: validate while user types / leaves the field ----------
+  nameBox.addEventListener("keyup", checkName);
+  phoneBox.addEventListener("keyup", checkPhone);
+  passBox.addEventListener("keyup", checkPass);
+  dateBox.addEventListener("change", checkDate);
+  guestBox.addEventListener("change", checkGuests);
+
+  // Allow only numbers in phone box
+  phoneBox.addEventListener("input", function () {
+    phoneBox.value = phoneBox.value.replace(/[^0-9]/g, "");
+  });
+
+  // ---------- Show / hide password ----------
+  document.getElementById("showPass").addEventListener("click", function () {
+    if (this.checked) {
+      passBox.type = "text";
+    } else {
+      passBox.type = "password";
+    }
+  });
+
+  // ---------- Character counter ----------
+  noteBox.addEventListener("keyup", function () {
+    document.getElementById("count").innerHTML = noteBox.value.length;
+  });
+
+  // ---------- Live total price ----------
+  function updateTotal() {
+    var price = document.querySelector('input[name="meal"]:checked').value;
+    var guests = Number(guestBox.value);
+    var total = price * guests;
+    document.getElementById("total").innerHTML = "Estimated Total: Rs." + total;
+  }
+  guestBox.addEventListener("change", updateTotal);
+  var radios = document.getElementsByName("meal");
+  for (var i = 0; i < radios.length; i++) {
+    radios[i].addEventListener("click", updateTotal);
+  }
+
+  // ---------- Submit event ----------
+  form.addEventListener("submit", function (e) {
+    e.preventDefault();   // stop page from reloading
+
+    // Run ALL checks (don't stop at first error)
+    var ok1 = checkName();
+    var ok2 = checkPhone();
+    var ok3 = checkPass();
+    var ok4 = checkDate();
+    var ok5 = checkGuests();
+    var ok6 = checkAgree();
+
+    if (ok1 && ok2 && ok3 && ok4 && ok5 && ok6) {
+      var meal = document.querySelector('input[name="meal"]:checked');
+      var mealName = meal.value === "150" ? "Tiffin" : "Meals";
+
+      result.innerHTML =
+        "<b>Booking Confirmed!</b><br>" +
+        "Name: " + nameBox.value + "<br>" +
+        "Mobile: " + phoneBox.value + "<br>" +
+        "Date: " + dateBox.value + "<br>" +
+        "Guests: " + guestBox.value + "<br>" +
+        "Meal: " + mealName + "<br>" +
+        document.getElementById("total").innerHTML;
+
+      result.classList.remove("hidden");
+    }
+  });
+
+  // ---------- Clear button ----------
+  document.getElementById("resetBtn").addEventListener("click", function () {
+    form.reset();
+    result.classList.add("hidden");
+    document.getElementById("count").innerHTML = "0";
+    document.getElementById("total").innerHTML = "Estimated Total: Rs.0";
+
+    // remove red / green borders and error texts
+    var all = document.querySelectorAll("input, select");
+    for (var i = 0; i < all.length; i++) {
+      all[i].classList.remove("error-border", "ok-border");
+    }
+    var errs = document.querySelectorAll(".error");
+    for (var j = 0; j < errs.length; j++) {
+      errs[j].innerHTML = "";
+    }
+  });
+</script>
+</body>
+</html>
